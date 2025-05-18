@@ -4,7 +4,11 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 class SimpleHandler(BaseHTTPRequestHandler):
     
     def do_GET(self):
-        
+    
+        print(f"Requested path: {self.path}")
+        # Check the requested path and respond accordingly
+        # You can add more paths and their corresponding responses here
+
         if self.path == "/json":
             
             self.send_response(200) # 200 means "OK"
@@ -13,6 +17,12 @@ class SimpleHandler(BaseHTTPRequestHandler):
             self.end_headers()
             # Response body
             self.wfile.write(b'{"message": "Hello, JSON!"}')
+
+        elif self.path == "/":
+            self.send_response(200)
+            self.send_header("Content-type", "text/plain")
+            self.end_headers()
+            self.wfile.write(b"Welcome to my simple web server!")
             
         elif self.path == "/xml":
             self.send_response(200)
