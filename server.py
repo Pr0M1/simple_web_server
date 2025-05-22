@@ -1,75 +1,59 @@
+import os
+from urllib.parse import unquote
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 
 class SimpleHandler(BaseHTTPRequestHandler):
     
     def do_GET(self):
-    
-        print(f"Requested path: {self.path}")
-        # Check the requested path and respond accordingly
-        # You can add more paths and their corresponding responses here
 
-        if self.path == "/json":
-            
-            self.send_response(200) # 200 means "OK"
-            # Define response headers
-            self.send_header("Content-type", "application/json")
-            self.end_headers()
-            # Response body
-            self.wfile.write(b'{"message": "Hello, JSON!"}')
+        request_path = unquote(self.path)
+        print(f"Requested path: {request_path}")
 
-        elif self.path == "/":
-            self.send_response(200)
-            self.send_header("Content-type", "text/plain")
-            self.end_headers()
-            self.wfile.write(b"Welcome to my simple web server!")
-            
-        elif self.path == "/xml":
-            self.send_response(200)
-            self.send_header("Content-type", "application/xml")
-            self.end_headers()
-            self.wfile.write(b"<message>Hello, XML!</message>")
-            
-        elif self.path == "/csv":
-            self.send_response(200)
-            self.send_header("Content-type", "text/csv")
-            self.end_headers()
-            self.wfile.write(b"message,Hello, CSV")
-            
-        elif self.path == "/html":
-            self.send_response(200)
-            self.send_header("Content-type", "text/html")
-            self.end_headers()
-            self.wfile.write(b"<html><body><h1>Hello, HTML!</h1></body></html>")
-            
-        elif self.path == "/javascript":
-            self.send_response(200)
-            self.send_header("Content-type", "application/javascript")
-            self.end_headers()
-            self.wfile.write(b"console.log('Hello, JavaScript!');")
-            
-        elif self.path == "/jpeg":
-            try:
-                # Read a JPEG file from disk
-                with open("example.jpg", "rb") as f:
-                    image_data = f.read()
-                self.send_response(200)
-                self.send_header("Content-type", "image/jpeg")
-                self.end_headers()
-                self.wfile.write(image_data)
-            except FileNotFoundError:
-                # Handle case where the file is missing
-                self.send_response(404)
-                self.end_headers()
-                self.wfile.write(b"404 Image Not Found")
-            
+        # Handle root ("/") as index.html in static
+        if request_path == "/" or request_path == "":
+            file_path = os.path.join("static", "index.html")
+
+        # If it starts with "/images/", serve from "images/"
+        elif request_path.startswith("/images/"):
+            file_path = request_path.lstrip("/")  # "images/example.jpg"
+
+        # Otherwise, serve from "static" (CSS, JS, etc.)
         else:
+            file_path = os.path.join("static", request_path.lstrip("/"))
+
+        # Get the content type based on file extension
+        content_types = {
+            ".html": "text/html",
+            ".css": "text/css",
+            ".js": "application/javascript",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".png": "image/png",
+            ".gif": "image/gif",
+            ".json": "application/json",
+            ".txt": "text/plain",
+        }
+
+        # Get extension and content-type
+        _, ext = os.path.splitext(file_path)
+        content_type = content_types.get(ext, "application/octet-stream")
+
+        # Try to read and return the file
+        try:
+            with open(file_path, "rb") as f:
+                content = f.read()
+            self.send_response(200)
+            self.send_header("Content-type", content_type)
+            self.end_headers()
+            self.wfile.write(content)
+        except FileNotFoundError:
             self.send_response(404)
             self.end_headers()
-            self.wfile.write(b"404 Not Found")            
-            
- 
-host = "localhost"
+            self.wfile.write(b"404 Not Found")
+
+         
+host = "0.0.0.0"
 port = 8080
 server = HTTPServer((host, port), SimpleHandler)
 
